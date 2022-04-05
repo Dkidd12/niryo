@@ -15,7 +15,7 @@ com = serial.Serial('COM4',250000)
    
 
 class move():
-    #raw_text = open(r'C:\Users\ASUS\Documents\5th Year\Thesis\Final Project Report\Learn Python\Move arm\box_0.txt')
+    #raw_text = open(r'C:\Users\ASUS\Documents\5th Year\Thesis\Final Project Report\Learn Python\Move arm\test_0.2mm')
     with open(r'C:\Users\ASUS\Documents\5th Year\Thesis\Final Project Folder\niryo_ready_parts\Robot programmes\Test_0.2mm.txt') as raw_text:
         raw_text = list(raw_text)
     
