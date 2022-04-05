@@ -1,0 +1,105 @@
+import pandas as pd
+# Library used for string matching
+import re
+# import numpy
+import numpy as np 
+import time
+from threading import Thread
+import serial
+
+com = serial.Serial('COM4',250000)
+
+class move():
+    #raw_text = open(r'C:\Users\ASUS\Documents\5th Year\Thesis\Final Project Report\Learn Python\Move arm\test_0.2mm.txt')
+    with open(r'C:\Users\ASUS\Documents\5th Year\Thesis\Final Project Folder\niryo_ready_parts\Robot programmes\Test_1.cnc') as raw_text:
+        raw_text = list(raw_text)
+    
+        X = 'X' 
+    
+        combine = "".join(line.strip()for line in raw_text)         # Combine each line into one line 
+        split = combine.split('LINEAR')                             # Split line at work LINEAR
+    
+    
+        cordinates_list = []    
+    
+        p = re.compile(r'-?\d+\.\d+')                               # Compile a pattern to capture float values
+    
+        # Loop through every line 
+        for raw_text_line in split:
+          
+          
+            if X in raw_text_line:
+             
+                cordinates = [float(i) for i in p.findall(raw_text_line)]   # Extract all linear numbers from string
+                cordinates_list.append(cordinates)                          # Add them cordinates to the list
+             
+    
+        cordinates_df = pd.DataFrame(cordinates_list)
+        cordinates_df = cordinates_df.fillna(0)
+        print(cordinates_df)
+        
+        def move_arm(self):
+            
+             cordinates_df = self.cordinates_df
+             
+             for i in range(len(cordinates_df)): 
+                
+                time.sleep(0.4) # correct??
+                
+                joint_1 = (cordinates_df[0][i])*(np.pi/180)*(-1)
+                joint_2 = (cordinates_df[1][i])*(np.pi/180)*(-1)
+                joint_3 = (cordinates_df[2][i])*(np.pi/180)*(-1)
+                joint_4 = (cordinates_df[3][i])*(np.pi/180)*(-1)
+                joint_5 = (cordinates_df[4][i])*(np.pi/180)*(-1)
+                joint_6 = (cordinates_df[5][i])*(np.pi/180)*(-1)
+               
+                joint_1 = round(joint_1, 8) 
+                joint_2 = round(joint_2, 8)
+                joint_3 = round(joint_3, 8)
+                joint_4 = round(joint_4, 8)
+                joint_5 = round(joint_5, 8)
+                joint_6 = round(joint_6, 8)
+            
+                #move_arm(joint_1, joint_2, joint_3, joint_4, joint_5, joint_6)
+                
+                joints_value = [joint_1, joint_2, joint_3, joint_4, joint_5, joint_6]
+                print("Joint angles =", joints_value) 
+                #n.move_joints(joints_value)
+            
+        def move_extruder(self):
+            
+            
+            cordinates_df = self.cordinates_df
+            
+            com.write(str.encode("G91 \r\n"))
+    
+            for i in range(len(cordinates_df)): 
+                
+                
+                time.sleep(0.4)
+                extrude = cordinates_df[7][i]
+                #print(extrude)
+                extrude = str(extrude)
+                extrude_command = "G1 F12.54 E\r\n"
+                extrude_command = extrude_command[:11] + extrude + extrude_command[11:]
+                com.write(str.encode(extrude_command))
+                print(extrude_command)
+             
+                
+quit = False
+move = move()
+while(not(quit)):
+
+
+    print("\n\t   >  - -     Niryo One - 3D Printer   - -  <   \n")
+    print("\n\t1 - Print Parameters\n\t0 -  Quit")
+    choice = int(input("\nChoice ? "))
+    
+    if(choice == 0):                  #-----------------------------------------
+     quit = True
+     
+    if(choice == 1):
+        if __name__ == '__main__':
+            Thread(target = move.move_arm).start()
+            Thread(target = move.move_extruder).start()
+            
