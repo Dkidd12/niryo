@@ -1,0 +1,315 @@
+import serial
+import time
+import pandas as pd
+import re
+
+
+cred = '\033[0;31;47m'
+cend = '\033[0m'
+cgreen = '\033[0;32;47m'
+
+
+com = serial.Serial('COM4',250000)
+   
+
+class move_printer:
+    
+    global com
+        
+    
+    #com = serial.Serial('COM4',250000)
+    time.sleep(1) #delay to safely start serial communication
+    #cordinates_df = 0
+    
+    
+    raw_text = '''LINEAR X -0.495727 Y 47.849700 Z 24.010800 PH 0.000000 RH 18.139500 RZ -0.495727 F80.00
+     CALL Extruder(0.4039)
+     LINEAR X -0.312469 Y 47.740900 Z 24.294700 PH 0.000000 RH 17.964400 RZ -0.312469 F80.00
+     CALL Extruder(0.1749)
+     LINEAR X -0.250105 Y 47.686800 Z 24.436100 PH 0.000000 RH 17.877100 RZ -0.250105 F80.00
+     CALL Extruder(0.1556)
+     LINEAR X -0.217890 Y 47.632900 Z 24.577100 PH 0.000000 RH 17.790000 RZ -0.217890 F80.00
+     CALL Extruder(0.1485)
+     LINEAR X -0.208664 Y 47.579200 Z 24.717900 PH 0.000000 RH 17.702900 RZ -0.208664 F80.00
+     CALL Extruder(0.1487)
+     LINEAR X -0.219338 Y 47.525800 Z 24.858000 PH 0.000000 RH 17.616100 RZ -0.219338 F80.00
+     CALL Extruder(0.1560)
+     LINEAR X -0.253462 Y 47.472500 Z 24.998300 PH 0.000000 RH 17.529200 RZ -0.253462 F80.00
+     CALL Extruder(0.1756)
+     LINEAR X -0.318285 Y 47.419400 Z 25.138100 PH 0.000000 RH 17.442500 RZ -0.318285 F80.00
+     CALL Extruder(0.4039)
+     LINEAR X -0.506983 Y 47.314100 Z 25.416000 PH 0.000000 RH 17.269900 RZ -0.506983 F80.00
+     CALL Extruder(0.1749)
+     LINEAR X -0.571666 Y 47.261500 Z 25.555100 PH 0.000000 RH 17.183400 RZ -0.571666 F80.00
+     CALL Extruder(0.1556)
+     LINEAR X -0.605784 Y 47.209000 Z 25.694300 PH 0.000000 RH 17.096700 RZ -0.605784 F80.00
+     LINEAR X -0.616829 Y 47.156400 Z 25.833800 PH 0.000000 RH 17.009900 RZ -0.616829 F80.00
+     LINEAR X -0.607234 Y 47.103800 Z 25.973400 PH 0.000000 RH 16.922800 RZ -0.607234 F80.00
+     LINEAR X -0.574094 Y 47.051400 Z 26.112800 PH 0.000000 RH 16.835700 RZ -0.574094 F80.00
+     CALL Extruder(0.1756)
+     LINEAR X -0.509826 Y 46.998900 Z 26.252900 PH 0.000000 RH 16.748200 RZ -0.509826 F80.00
+     CALL Extruder(0.4039)
+     LINEAR X -0.321389 Y 46.894100 Z 26.532700 PH 0.000000 RH 16.573200 RZ -0.321389 F80.00
+     CALL Extruder(0.1749)
+     LINEAR X -0.257257 Y 46.842300 Z 26.671600 PH 0.000000 RH 16.486100 RZ -0.257257 F80.00
+     CALL Extruder(0.1556)
+     LINEAR X -0.224132 Y 46.790500 Z 26.810400 PH 0.000000 RH 16.399100 RZ -0.224132 F80.00
+     CALL Extruder(0.1485)
+     LINEAR X -0.214652 Y 46.738900 Z 26.949000 PH 0.000000 RH 16.312100 RZ -0.214652 F80.00
+     CALL Extruder(0.1487)
+     LINEAR X -0.225645 Y 46.687500 Z 27.087300 PH 0.000000 RH 16.225200 RZ -0.225645 F80.00
+     LINEAR X -0.260763 Y 46.636300 Z 27.225400 PH 0.000000 RH 16.138300 RZ -0.260763 F80.00
+     CALL Extruder(0.1756)
+     LINEAR X -0.327468 Y 46.585400 Z 27.362800 PH 0.000000 RH 16.051900 RZ -0.327468 F80.00
+     CALL Extruder(0.4039)
+     LINEAR X -0.521664 Y 46.484100 Z 27.636700 PH 0.000000 RH 15.879200 RZ -0.521664 F80.00
+     CALL Extruder(0.1749)
+     LINEAR X -0.588251 Y 46.433700 Z 27.773600 PH 0.000000 RH 15.792800 RZ -0.588251 F80.00
+     CALL Extruder(0.1556)
+     LINEAR X -0.623388 Y 46.383300 Z 27.910400 PH 0.000000 RH 15.706300 RZ -0.623388 F80.00
+     CALL Extruder(0.1485)
+     
+     '''
+      
+    raw_text = list(raw_text)
+
+    X = 'X' 
+
+    combine = "".join(line.strip()for line in raw_text)         # Combine each line into one line 
+    split = combine.split('LINEAR')                             # Split line at work LINEAR
+
+
+    cordinates_list = []    
+
+    p = re.compile(r'-?\d+\.\d+')                               # Compile a pattern to capture float values
+
+    # Loop through every line 
+    for raw_text_line in split:
+      
+      
+        if X in raw_text_line:
+         
+            cordinates = [float(i) for i in p.findall(raw_text_line)]   # Extract all linear numbers from string
+            cordinates_list.append(cordinates)                          # Add them cordinates to the list
+         
+
+    cordinates_df = pd.DataFrame(cordinates_list)
+    cordinates_df = cordinates_df.fillna(0)
+    print(cordinates_df)
+    
+    def move_extruder(self):
+        
+        
+        #com = self.com
+        
+        cordinates_df = self.cordinates_df
+        
+        self.com.write(str.encode("G91 \r\n"))
+
+        for i in range(len(cordinates_df)): 
+            
+            time.sleep(1)
+            extrude = cordinates_df[7][i]
+            print(extrude)
+            extrude = str(extrude)
+            extrude_command = "G1 F12.54 E\r\n"
+            extrude_command = extrude_command[:11] + extrude + extrude_command[11:]
+            self.com.write(str.encode(extrude_command))
+            print(extrude_command)
+            
+#com_obj = move_printer()
+#com_obj.move_extruder()
+
+
+###############################################################################
+#----------------------------------Arduino------------------------------------#
+###############################################################################
+
+class Arduino():
+    #global com
+    #com = serial.Serial('COM4',250000)
+    time.sleep(1) #delay to safely start serial communication
+
+    
+    fanspeed = 0
+    extruder_temp = 0
+    fanspeed2 = 0
+    
+    
+       
+    def extruder_temperature(self):
+        
+        global extruder_temp
+        
+        
+        
+        print("\nWhat extruder temperature do you want? \n\t PLA - 190-220 \n\t PET - 265-300 \n\t ABS - 240-270 \n\t -----WARNING----- \n\t DO NOT EXCEED 300! ")
+        temperature = int(input("\nTemperature ? "))
+        extruder_temp = temperature
+        if(temperature <= 0):
+            print(cred + " Extruder Temperature must be greater than 0" + cend)
+       
+   # def fan_speed2(self):
+        
+    #    global fanspeed2
+        
+     #   print("\nWhat fan speed 2 do you want [0-255]?")
+      #  speed2 = int(input("\nTemperature ? "))
+       # fanspeed2 = speed2
+       # if(fanspeed2 < 0):
+        #    print(cred + "Speed must be greater than 0" + cend)
+        #if(speed2 >= 0):
+         #   print(cgreen + "Saved" + cend)
+           
+    def fan_speed(self):
+        
+        global fanspeed
+        
+        print("\nWhat fan speed do you want [0-255]?")
+        speed = int(input("\nSpeed ? "))
+        fanspeed = speed
+        
+        
+        if(speed < 0):
+            print(cred + "Speed must be greater than 0" + cend)
+        if(speed >= 0):
+            print(cgreen + "Saved" + cend)
+            
+            
+
+    def printer_on(self):
+        
+        fan = str(fanspeed)
+     #   fan2 = str(fanspeed2)
+        ext = str(extruder_temp)
+        
+        fan_on = "M106 S \r\n"
+        #fan_on2 = "M106 P1 S \r\n"
+        ext_on = "M104 S \r\n"
+        
+        fan_on = fan_on[:6] + fan + fan_on[6:]   
+        #fan_on2 = fan_on2[:10] + fan2 + fan_on2[10:]
+        ext_on = ext_on[:6] + ext + ext_on[6:]
+        
+        time.sleep(1)
+        self.com.write(str.encode(ext_on))
+        time.sleep(1)
+        self.com.write(str.encode(fan_on))
+        time.sleep(1)
+        #self.com.write(str.encode(fan_on2))
+        time.sleep(1)
+    
+        
+        
+        while True:
+          line = self.com.readline()
+          print(line)
+        
+          if line == b'ok\n':
+            break
+        
+     
+        
+        
+        
+    def stop_printer(self):
+        
+        
+        
+        #com = serial.Serial('COM4',250000)
+        time.sleep(1)
+        #self.command("M107 \r\n")
+        self.com.write(str.encode("M107 \r\n"))                  
+        #self.command(com, "M107 \r\n")
+        time.sleep(1)
+        self.com.write(str.encode("M140 S0 \r\n")) 
+        #self.command(com, "M140 S0 \r\n")
+        time.sleep(1)
+        #self.command(com, "M104 S0 \r\n")
+        self.com.write(str.encode("M104 S0 \r\n"))
+        time.sleep(1)
+        print(cred + "printer is turing off" + cend)
+        #self.com.close()
+        
+        while True:
+          line = self.com.readline()
+          print(line)
+        
+          if line == b'ok\n':
+            break
+        
+    def current_temperature(self):
+        
+        
+        
+        
+        time.sleep(1)
+        
+        self.com.write(str.encode("M105 \r\n"))               
+        time.sleep(1)
+        print("Current Temperature ")
+         
+       # print(self.com.readline()[10])
+        
+        while True:
+          line = self.com.readline()
+          print(line)
+        
+         # if line == b'ok\n':
+          #  break
+       
+
+    
+    #def move12(self):
+        
+     #   time.sleep(1)
+      #  self.com.write(str.encode("G91 \r\n"))
+        
+       # for i in range(len(cordinates_df)): 
+
+        #    extrude = cordinates_df[7][i]
+         #   print(extrude)
+          #  extrude = str(extrude)
+           # extrude_command = "G1 F100 E\r\n"
+            #extrude_command = extrude_command[:9] + extrude + extrude_command[9:]
+            #self.com.write(str.encode(extrude_command))
+            #print(extrude_command)
+        
+        #12.54 
+
+
+
+####################################################
+#---------------- MAIN ----------------------------#
+####################################################
+
+quit = False
+arduino = Arduino()
+move = move_printer()
+
+while(not(quit)):
+
+
+    print("\n\t   >  - -     Niryo One - 3D Printer   - -  <   \n")
+    print("\n\t1 - Print Parameters\n\t2 - Turn on Printer\n\t3 - Get Current Temperature\n\t4 - Extrude\n\t5 - Stop Printer\n\t0 -  Quit")
+    choice = int(input("\nChoice ? "))
+    
+    if(choice == 0):                  #-----------------------------------------
+     quit = True
+     
+    if(choice == 1):
+        arduino.extruder_temperature()
+        arduino.fan_speed()
+           
+    if(choice == 2):              #-----------------------------------------
+      arduino.printer_on()
+                      
+    if(choice == 4):
+        #arduino.move12()
+        move.move_extruder()
+        
+    if(choice == 3):
+        arduino.current_temperature()
+               
+    if(choice == 5):
+         arduino.stop_printer()
